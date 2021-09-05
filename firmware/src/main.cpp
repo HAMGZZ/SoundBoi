@@ -165,6 +165,7 @@ void rules(EngineData data)
 void open()
 {
     digitalWrite(OUTPUT_PIN, HIGH);
+    digitalWrite(IND_LED, HIGH);
 }
 
 void close()

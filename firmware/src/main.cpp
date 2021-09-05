@@ -24,24 +24,27 @@ ELM327 elm;
 SoftwareSerial debug(9, 10);
 
 int state = 0;
+int min_state = 0;
+int max_state = 3;          //GLOBAL VARS for interupt
 
-uint32_t rpm = 0;
-uint32_t speed = 0;
-uint32_t throttle = 0;
-uint32_t load = 0;
-uint32_t coolantTemp = 0;
-uint32_t engineOnTime = 0;
 
-uint32_t ledIndicatorTimer = 0;
-uint32_t blinkrate = 0;
+struct EngineData
+{
+    float rpm;
+    float speed;
+    float throttle;
+    float load;
+    float coolantTemp;
+    float engineOnTime;
+};
 
-bool connected = false;
-
-bool rules();
+void rules(EngineData data);
+void blinkLed(int *ledIndicatorTimer, int *blinkrate);
 void buttonHandler();
-void blinkLed();
 void open();
 void close();
+
+
 
 int main()
 {
@@ -50,20 +53,37 @@ int main()
     debug.begin(9600);
     debug.printf("SoundBoi for BLAT! - Lewis Hamilton September 2021\r\n");
     debug.printf("VERSION: %d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    debug.printf("Loading variables...");
     pinMode(BUTTON, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(BUTTON), buttonHandler, FALLING);
+    
+    EngineData data;
+    data.rpm = 0;
+    data.coolantTemp = 0;
+    data.load = 0;
+    data.speed = 0;
+    data.throttle = 0;
+    data.engineOnTime = 0;
+    int ledIndicatorTimer = 0;
+    int blinkrate = 0;
+    bool connected = false;
+
     open();
     if(!elm.begin(Serial, true, 2000))
     {
         connected = false;
         debug.printf("COULD NOT CONNECT TO ELM327...");
         digitalWrite(CON_LED, LOW);
+        min_state = 2;
+        max_state = 3;
     }
     else
     {
         connected = true;
         debug.printf("CONNECTED TO ELM327");
         digitalWrite(CON_LED, HIGH);
+        min_state = 0;
+        max_state = 3;
     }
 
     while(true)
@@ -71,53 +91,54 @@ int main()
         if(connected)
         {
             delay(100);
-            float tempRPM = elm.rpm();
-            float tempSpeed = elm.kph();
-            float tempThrottle = elm.throttle();
-            float tempLoad = elm.engineLoad();
-            float tempCoolantTemp = elm.engineCoolantTemp();
-            float tempEngineOnTime = elm.runTime();
-
+            EngineData tempData;
+            tempData.rpm = elm.rpm();
+            tempData.speed = elm.kph();
+            tempData.throttle = elm.throttle();
+            tempData.load = elm.engineLoad();
+            tempData.coolantTemp = elm.engineCoolantTemp();
+            tempData.engineOnTime = elm.runTime();
 
             if(elm.status == ELM_SUCCESS)
             {
-                rpm = (uint32_t)tempRPM;
-                speed = (uint32_t)tempSpeed;
-                throttle = (uint32_t)tempThrottle;
-                load = (uint32_t)tempLoad;
-                coolantTemp = (uint32_t)tempCoolantTemp;
-                engineOnTime = (uint32_t)tempEngineOnTime;
-                debug.printf("RPM: %lf SPD: %lf THTL: %lf\% LOAD: %lf\% TEMP: %lfC ON-TIME: %lfs\r\n");
+                tempData = data;
+                debug.printf("RPM: %lf SPD: %lf THTL: %lf\% LOAD: %lf\% TEMP: %lfC ON-TIME: %lfs\r\n", data.rpm, data.speed, data.throttle, data.load, data.coolantTemp, data.engineOnTime);
             }
 
-            rules();
-            blinkLed();
+            rules(data);
+            blinkLed(&ledIndicatorTimer, &blinkrate);
+            ledIndicatorTimer++;
+        }
+        else
+        {
+            rules(data);
+            blinkLed(&ledIndicatorTimer, &blinkrate);
             ledIndicatorTimer++;
         }
     }
 }
 
-bool rules()
+void rules(EngineData data)
 {
-    if(state == 0 && engineOnTime > ENGINE_WARMUP_TIME)
+    if(state == 0 && data.engineOnTime > ENGINE_WARMUP_TIME)
     {
-        if((rpm > 3000 || load > 50 || throttle > 50) && speed < 90)
+        if((data.rpm > 3000 || data.load > 50 || data.throttle > 50) && data.speed < 90)
             open();
-        else if((rpm >  4000 || load > 70 || throttle > 80) && speed >= 90)
+        else if((data.rpm >  4000 || data.load > 70 || data.throttle > 80) && data.speed >= 90)
             open();
-        else if(speed < 6 && coolantTemp > 50)
+        else if(data.speed < 6 && data.coolantTemp > 50)
             open();
         else
             close();
     }
 
-    else if(state == 1 && engineOnTime > ENGINE_WARMUP_TIME)
+    else if(state == 1 && data.engineOnTime > ENGINE_WARMUP_TIME)
     {
-        if((rpm > 1900 || load > 30 || throttle > 30) && speed < 90)
+        if((data.rpm > 2200 || data.load > 30 || data.throttle > 30) && data.speed < 90)
             open();
-        else if(speed < 15)
+        else if(data.speed < 15)
             open();
-        else if(speed >= 90)
+        else if(data.speed >= 90)
         {
             state = 0;
         }
@@ -135,11 +156,10 @@ bool rules()
         close();
     }
 
-    if(rpm < 50 || engineOnTime < ENGINE_WARMUP_TIME)
+    if(data.rpm < 50 || data.engineOnTime < ENGINE_WARMUP_TIME)
     {
         open();
     }
-    return true;
 }
 
 void open()
@@ -152,32 +172,32 @@ void close()
     digitalWrite(OUTPUT_PIN, LOW);
 }
 
-void blinkLed()
+void blinkLed(int *ledIndicatorTimer, int *blinkrate)
 {
-    if(ledIndicatorTimer > blinkrate)
+    if(*ledIndicatorTimer > *blinkrate)
     {
         if(state == 0)
         {
-            blinkrate = 10;
-            ledIndicatorTimer = 0;
+            *blinkrate = 10;
+            *ledIndicatorTimer = 0;
             digitalWrite(IND_LED, !digitalRead(IND_LED));
         }
         else if(state == 1)
         {
-            blinkrate = 2;
-            ledIndicatorTimer = 0;
+            *blinkrate = 2;
+            *ledIndicatorTimer = 0;
             digitalWrite(IND_LED, !digitalRead(IND_LED));
         }
         else if(state == 2)
         {
-            blinkrate = 0;
-            ledIndicatorTimer = 0;
+            *blinkrate = 0;
+            *ledIndicatorTimer = 0;
             digitalWrite(IND_LED, HIGH);
         }
         else if(state == 3)
         {
-            blinkrate = 0;
-            ledIndicatorTimer = 0;
+            *blinkrate = 0;
+            *ledIndicatorTimer = 0;
             digitalWrite(IND_LED, LOW);
         }
 
@@ -193,9 +213,13 @@ void buttonHandler()
   if (interrupt_time - last_interrupt_time > 200) 
   {
       state++;
-      if(state > 3)
+      if(state > max_state)
       {
           state = 0;
+      }
+      if(state < min_state)
+      {
+          state = min_state;
       }
   }
   last_interrupt_time = interrupt_time;

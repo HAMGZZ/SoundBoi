@@ -52,27 +52,25 @@ int main()
     Serial.begin(115200);
     debug.begin(9600);
     debug.printf("SoundBoi for BLAT! - Lewis Hamilton September 2021\r\n");
-    debug.printf("VERSION: %d.%d.%d", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    debug.printf("VERSION: %d.%d.%d\r\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
     debug.printf("Loading variables...");
+    
     pinMode(BUTTON, INPUT_PULLUP);
     attachInterrupt(digitalPinToInterrupt(BUTTON), buttonHandler, FALLING);
     
-    EngineData data;
-    data.rpm = 0;
-    data.coolantTemp = 0;
-    data.load = 0;
-    data.speed = 0;
-    data.throttle = 0;
-    data.engineOnTime = 0;
+    EngineData data = {0};
     int ledIndicatorTimer = 0;
     int blinkrate = 0;
     bool connected = false;
-
+    debug.printf("[OK]\r\n");   
+    debug.printf("OPENING VALVE!\r\n");
     open();
+    debug.printf("CONNECTING TO ELM327...");
+
     if(!elm.begin(Serial, true, 2000))
     {
         connected = false;
-        debug.printf("COULD NOT CONNECT TO ELM327...");
+        debug.printf("[FAIL]\r\n");
         digitalWrite(CON_LED, LOW);
         min_state = 2;
         max_state = 3;
@@ -80,11 +78,13 @@ int main()
     else
     {
         connected = true;
-        debug.printf("CONNECTED TO ELM327");
+        debug.printf("[OK]\r\n");
         digitalWrite(CON_LED, HIGH);
         min_state = 0;
         max_state = 3;
     }
+
+    delay(1000);
 
     while(true)
     {

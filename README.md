@@ -4,7 +4,7 @@ SoundBoi is the codename for a porject which is intended to use with the [BLAT!]
 The board follow's a specific set of rules which can be found in the source code.
 
 ## Rules
-The SoundBoi uses 5 states and a set of rules it follows to determine if the valves should be oppened or closed.
+The SoundBoi uses 4 states and a set of rules it follows to determine if the valves should be oppened or closed.
 The valve will be open for the first 5 seconds since the car's startup.
 
 ### Rules 1 (Default state)

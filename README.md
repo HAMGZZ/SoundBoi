@@ -48,5 +48,6 @@ The PCB is meant to be attached to the BLAT! module back-to-back. This is to kee
 </object>
 
 ### 3D Models
+![alt text](PCB1.png)
 
 ### BOM

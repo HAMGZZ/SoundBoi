@@ -41,6 +41,12 @@ The PCB is meant to be attached to the BLAT! module back-to-back. This is to kee
 
 ### Schematic
 
+<object data="PCB/SoundBoi/SoundBoi.pdf" type="application/pdf" width="700px" height="700px">
+    <embed src="PCB/SoundBoi/SoundBoi.pdf">
+        <p>This browser does not support PDFs. Please download the PDF to view it: <a href="PCB/SoundBoi/SoundBoi.pdf">Download PDF</a>.</p>
+    </embed>
+</object>
+
 ### 3D Models
 
 ### BOM

@@ -56,7 +56,7 @@ The PCB is meant to be attached to the BLAT! module back-to-back. This is to kee
 |---------------------------------------------------------------------------------------------|---------------------------------------|-------|--------------------------|----------------------|--------|
 |Female Header, Pitch 5 mm, 1 x 2 Position, Height 10 mm, Tail Length 3.5 mm, Rohs, Bulk      |BUTTON, LED                            |       |282836-2                  |TECO-282836-2_V       |2       |
 |CAP CER 560PF 50V X7R 0603                                                                   |C1, C2                                 |560 pF |C0603C561K5RACTU          |FP-C0603C-CF-MFG      |2       |
-|CAP CER 0.1UF 50V X7R 0603                                                                   |C3, C4                                 |0.10 �F|C0603C104K5RACTU          |FP-C0603C-CF-MFG      |2       |
+|CAP CER 0.1UF 50V X7R 0603                                                                   |C3, C4                                 |0.10 uF|C0603C104K5RACTU          |FP-C0603C-CF-MFG      |2       |
 |Multilayer Ceramic Capacitors 27pF  5% 50V NP0 SMD 0603                                      |C5, C6                                 |       |C1608NP01H270J080AA       |FP-C1608-080-0_1-IPC_A|2       |
 |Typical RED, GREEN, YELLOW, AMBER GaAs LED                                                   |CON, IND, L1, L2, L3, L4, PWR          |       |                          |3.2X1.6X1.1           |7       |
 |DIODE GEN PURP 100V 150MA SOD123                                                             |D1, D2                                 |2pF    |1N4148W-13-F              |FP-SOD123-MFG         |2       |

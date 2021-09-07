@@ -38,7 +38,7 @@ struct EngineData
     float engineOnTime;
 };
 
-void rules(EngineData data);
+void rules(EngineData data, bool connected);
 void blinkLed(int *ledIndicatorTimer, int *blinkrate);
 void buttonHandler();
 void open();
@@ -105,20 +105,20 @@ int main()
                 debug.printf("RPM: %lf SPD: %lf THTL: %lf\% LOAD: %lf\% TEMP: %lfC ON-TIME: %lfs\r\n", data.rpm, data.speed, data.throttle, data.load, data.coolantTemp, data.engineOnTime);
             }
 
-            rules(data);
+            rules(data, connected);
             blinkLed(&ledIndicatorTimer, &blinkrate);
             ledIndicatorTimer++;
         }
         else
         {
-            rules(data);
+            rules(data, connected);
             blinkLed(&ledIndicatorTimer, &blinkrate);
             ledIndicatorTimer++;
         }
     }
 }
 
-void rules(EngineData data)
+void rules(EngineData data, bool connected)
 {
     if(state == 0 && data.engineOnTime > ENGINE_WARMUP_TIME)
     {
@@ -156,7 +156,7 @@ void rules(EngineData data)
         close();
     }
 
-    if(data.rpm < 50 || data.engineOnTime < ENGINE_WARMUP_TIME)
+    if((data.rpm < 50 || data.engineOnTime < ENGINE_WARMUP_TIME) && connected)
     {
         open();
     }

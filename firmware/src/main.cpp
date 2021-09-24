@@ -56,12 +56,6 @@ void loop()
     pinMode(CON_LED, OUTPUT);
 
 
-    digitalWrite(CON_LED, HIGH);
-    digitalWrite(IND_LED, HIGH);
-    delay(2000);                
-    digitalWrite(CON_LED, 0);
-    digitalWrite(IND_LED, 0);
-
     Serial.begin(38400);
     debug.begin(9600);
 
@@ -101,7 +95,6 @@ void loop()
         max_state = 3;
     }
 
-    delay(1000);
 
     while(true)
     {

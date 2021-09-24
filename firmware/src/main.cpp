@@ -29,18 +29,15 @@ int max_state = 3;                          //GLOBAL VARS for interupt (when con
 
 
 //Engine Data Struct
-struct EngineData
-{
-    float rpm;
-    float speed;
-    float throttle;
-    float load;
-    float coolantTemp;
-    float engineOnTime;
-};
+float rpm;
+float speed;
+float throttle;
+float load;
+float coolantTemp;
+float engineOnTime;
 
 
-bool rules(EngineData data, bool connected);            //Returns true or false depending on whether the valve should open or close
+bool rules(bool connected);            //Returns true or false depending on whether the valve should open or close
 void blinkLed(int *ledIndicatorTimer, int *blinkrate);  //Blink LED routine for dipiciting what state we are in.
 void buttonHandler();                                   //Button ISR
 void open();                                            //Open Valve         
@@ -48,24 +45,33 @@ void close();                                           //Close Valve
 
 
 
-int main()
-{
-    delay(1000);                        
-    Serial.begin(115200);
-    debug.begin(9600);
+void setup(){}
 
-    debug.printf("SoundBoi for BLAT! - Lewis Hamilton September 2021\r\n");
-    debug.printf("VERSION: %d.%d.%d\r\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
-    debug.printf("<<%ld>> Loading variables...", millis());
+void loop()
+{
     
     pinMode(BUTTON, INPUT_PULLUP);
     pinMode(OUTPUT_PIN, OUTPUT);
     pinMode(IND_LED, OUTPUT);
     pinMode(CON_LED, OUTPUT);
 
+
+    digitalWrite(CON_LED, HIGH);
+    digitalWrite(IND_LED, HIGH);
+    delay(2000);                
+    digitalWrite(CON_LED, 0);
+    digitalWrite(IND_LED, 0);
+
+    Serial.begin(38400);
+    debug.begin(9600);
+
+    debug.printf("SoundBoi for BLAT! - Lewis Hamilton September 2021\r\n");
+    debug.printf("VERSION: %d.%d.%d\r\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
+    debug.printf("<<%ld>> Loading variables...", millis());
+    
+
     attachInterrupt(digitalPinToInterrupt(BUTTON), buttonHandler, FALLING);
     
-    EngineData data = {0};
     int ledIndicatorTimer = 0;
     int blinkrate = 0;
     bool connected = false;
@@ -77,13 +83,14 @@ int main()
 
     debug.printf("<<%ld>> CONNECTING TO ELM327...", millis());
 
-    if(!elm.begin(Serial, true, 2000))
+    if(!elm.begin(Serial,false,1000))
     {
         connected = false;
         debug.printf("[FAIL]\r\n");
         digitalWrite(CON_LED, LOW);
         min_state = 2;
         max_state = 3;
+        state = 2;
     }
     else
     {
@@ -101,22 +108,30 @@ int main()
         delay(100);
         if(connected)
         {
-            EngineData tempData;
-            tempData.rpm = elm.rpm();
-            tempData.speed = elm.kph();
-            tempData.throttle = elm.throttle();
-            tempData.load = elm.engineLoad();
-            tempData.coolantTemp = elm.engineCoolantTemp();
-            tempData.engineOnTime = elm.runTime();
-
+            float temprpm = elm.rpm();
+            float tempspeed = elm.kph();
+            float tempthrottle = elm.throttle();
+            float tempload = elm.engineLoad();
+            float tempcoolantTemp = elm.engineCoolantTemp();
+            float tempengineOnTime = elm.runTime();
             if(elm.status == ELM_SUCCESS)
             {
-                tempData = data;
-                debug.printf("<<%ld>> RPM: %lf SPD: %lf THTL: %lf\% LOAD: %lf\% TEMP: %lfC ON-TIME: %lfs\r\n", millis(), data.rpm, data.speed, data.throttle, data.load, data.coolantTemp, data.engineOnTime);
+                rpm = temprpm;
+                speed = tempspeed;
+                throttle = tempthrottle;
+                load = tempload;
+                coolantTemp = tempcoolantTemp;
+                engineOnTime = tempengineOnTime;
+                
+                debug.printf("<<%lf>> RPM: %lf SPD: %lf THTL: %lf LOAD: %lf TEMP: %lfC ON-TIME: %lfs\r\n", millis(), rpm, speed, throttle, load, coolantTemp, engineOnTime);
+            }
+            else
+            {
+                debug.printf("<<%lf>> ELM FAIL!", millis());
             }
         }
         
-        if(rules(data, connected))
+        if(rules(connected))
         {
             open();
         }
@@ -130,28 +145,28 @@ int main()
     }
 }
 
-bool rules(EngineData data, bool connected)
+bool rules(bool connected)
 {
     bool openValve = false;
-    if(state == 0 && data.engineOnTime > ENGINE_WARMUP_TIME)
+    if(state == 0 && engineOnTime > ENGINE_WARMUP_TIME)
     {
-        if((data.rpm > 3000 || data.load > 50 || data.throttle > 50) && data.speed < 90)
+        if((rpm > 3000 || load > 80 || throttle > 90) && speed < 90)
             openValve = true;
-        else if((data.rpm >  4000 || data.load > 70 || data.throttle > 80) && data.speed >= 90)
+        else if((rpm >  4000 || load > 90 || throttle > 90) && speed >= 90)
             openValve = true;
-        else if(data.speed < 6 && data.coolantTemp > 50)
+        else if(speed == 0 && coolantTemp > 50)
             openValve = true;
         else
             openValve = false;
     }
 
-    else if(state == 1 && data.engineOnTime > ENGINE_WARMUP_TIME)
+    else if(state == 1 && engineOnTime > ENGINE_WARMUP_TIME)
     {
-        if((data.rpm > 2200 || data.load > 30 || data.throttle > 30) && data.speed < 90)
+        if((rpm > 2500 || load > 80 || throttle > 50) && speed < 90)
             openValve = true;
-        else if(data.speed < 15)
+        else if(speed < 25)
             openValve = true;
-        else if(data.speed >= 90)
+        else if(speed >= 90)
         {
             state = 0;
         }
@@ -161,15 +176,15 @@ bool rules(EngineData data, bool connected)
 
     else if(state == 2)
     {
-        openValve = true;
+        openValve = false;
     }
 
     else if(state == 3)
     {
-        openValve = false;
+        openValve = true;
     }
 
-    if((data.rpm < 50 || data.engineOnTime < ENGINE_WARMUP_TIME) && connected)
+    if((rpm < 50 || engineOnTime < ENGINE_WARMUP_TIME) && connected)
     {
         openValve = true;
     }
@@ -210,13 +225,13 @@ void blinkLed(int *ledIndicatorTimer, int *blinkrate)
         {
             *blinkrate = 0;
             *ledIndicatorTimer = 0;
-            digitalWrite(IND_LED, HIGH);
+            digitalWrite(IND_LED, LOW);
         }
         else if(state == 3)
         {
             *blinkrate = 0;
             *ledIndicatorTimer = 0;
-            digitalWrite(IND_LED, LOW);
+            digitalWrite(IND_LED, HIGH);
         }
 
     }

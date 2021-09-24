@@ -38,7 +38,7 @@ float engineOnTime;
 
 
 bool rules(bool connected);            //Returns true or false depending on whether the valve should open or close
-void blinkLed(int *ledIndicatorTimer, int *blinkrate);  //Blink LED routine for dipiciting what state we are in.
+void blinkLed();  //Blink LED routine for dipiciting what state we are in.
 void buttonHandler();                                   //Button ISR
 void open();                                            //Open Valve         
 void close();                                           //Close Valve
@@ -50,10 +50,6 @@ void setup(){}
 void loop()
 {
     
-    pinMode(BUTTON, INPUT_PULLUP);
-    pinMode(OUTPUT_PIN, OUTPUT);
-    pinMode(IND_LED, OUTPUT);
-    pinMode(CON_LED, OUTPUT);
 
 
     Serial.begin(38400);
@@ -66,9 +62,13 @@ void loop()
 
     attachInterrupt(digitalPinToInterrupt(BUTTON), buttonHandler, FALLING);
     
-    int ledIndicatorTimer = 0;
-    int blinkrate = 0;
+    pinMode(BUTTON, INPUT_PULLUP);
+    pinMode(OUTPUT_PIN, OUTPUT);
+    pinMode(IND_LED, OUTPUT);
+    pinMode(CON_LED, OUTPUT);
+
     bool connected = false;
+
     debug.printf("[OK]\r\n");  
 
     // Open valves for engine start.
@@ -133,8 +133,7 @@ void loop()
             close();
         }
 
-        blinkLed(&ledIndicatorTimer, &blinkrate);
-        ledIndicatorTimer++;
+        blinkLed();
     }
 }
 
@@ -199,35 +198,27 @@ void close()
     digitalWrite(OUTPUT_PIN, LOW);
 }
 
-void blinkLed(int *ledIndicatorTimer, int *blinkrate)
+void blinkLed()
 {
-    if(*ledIndicatorTimer > *blinkrate)
+    if(state == 0)
     {
-        if(state == 0)
-        {
-            *blinkrate = 5;
-            *ledIndicatorTimer = 0;
-            digitalWrite(IND_LED, !digitalRead(IND_LED));
-        }
-        else if(state == 1)
-        {
-            *blinkrate = 2;
-            *ledIndicatorTimer = 0;
-            digitalWrite(IND_LED, !digitalRead(IND_LED));
-        }
-        else if(state == 2)
-        {
-            *blinkrate = 0;
-            *ledIndicatorTimer = 0;
-            digitalWrite(IND_LED, LOW);
-        }
-        else if(state == 3)
-        {
-            *blinkrate = 0;
-            *ledIndicatorTimer = 0;
-            digitalWrite(IND_LED, HIGH);
-        }
-
+        analogWrite(IND_LED, 70);
+        delay(100);
+        digitalWrite(IND_LED, LOW);
+    }
+    else if(state == 1)
+    {
+        analogWrite(IND_LED, 70);
+        delay(50);
+        digitalWrite(IND_LED, LOW);
+    }
+    else if(state == 2)
+    {
+        digitalWrite(IND_LED, LOW);
+    }
+    else if(state == 3)
+    {
+        analogWrite(IND_LED, 70);
     }
 }
 

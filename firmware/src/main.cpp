@@ -38,7 +38,7 @@ struct EngineData
     float engineOnTime;
 };
 
-void rules(EngineData data, bool connected);
+bool rules(EngineData data, bool connected);
 void blinkLed(int *ledIndicatorTimer, int *blinkrate);
 void buttonHandler();
 void open();
@@ -63,7 +63,7 @@ int main()
     int blinkrate = 0;
     bool connected = false;
     debug.printf("[OK]\r\n");   
-    debug.printf("OPENING VALVE!\r\n");
+    debug.printf("OPENING VALVES!\r\n");
     open();
     debug.printf("CONNECTING TO ELM327...");
 
@@ -88,9 +88,9 @@ int main()
 
     while(true)
     {
+        delay(100);
         if(connected)
         {
-            delay(100);
             EngineData tempData;
             tempData.rpm = elm.rpm();
             tempData.speed = elm.kph();
@@ -104,62 +104,68 @@ int main()
                 tempData = data;
                 debug.printf("RPM: %lf SPD: %lf THTL: %lf\% LOAD: %lf\% TEMP: %lfC ON-TIME: %lfs\r\n", data.rpm, data.speed, data.throttle, data.load, data.coolantTemp, data.engineOnTime);
             }
-
-            rules(data, connected);
-            blinkLed(&ledIndicatorTimer, &blinkrate);
-            ledIndicatorTimer++;
+        }
+        
+        if(rules(data, connected))
+        {
+            open();
         }
         else
         {
-            rules(data, connected);
-            blinkLed(&ledIndicatorTimer, &blinkrate);
-            ledIndicatorTimer++;
+            close();
         }
+
+        blinkLed(&ledIndicatorTimer, &blinkrate);
+        ledIndicatorTimer++;
     }
 }
 
-void rules(EngineData data, bool connected)
+bool rules(EngineData data, bool connected)
 {
+    bool openValve = false;
     if(state == 0 && data.engineOnTime > ENGINE_WARMUP_TIME)
     {
         if((data.rpm > 3000 || data.load > 50 || data.throttle > 50) && data.speed < 90)
-            open();
+            openValve = true;
         else if((data.rpm >  4000 || data.load > 70 || data.throttle > 80) && data.speed >= 90)
-            open();
+            openValve = true;
         else if(data.speed < 6 && data.coolantTemp > 50)
-            open();
+            openValve = true;
         else
-            close();
+            openValve = false;
     }
 
     else if(state == 1 && data.engineOnTime > ENGINE_WARMUP_TIME)
     {
         if((data.rpm > 2200 || data.load > 30 || data.throttle > 30) && data.speed < 90)
-            open();
+            openValve = true;
         else if(data.speed < 15)
-            open();
+            openValve = true;
         else if(data.speed >= 90)
         {
             state = 0;
         }
         else
-            close();
+            openValve = false;
     }
 
     else if(state == 2)
     {
-        open();
+        openValve = true;
     }
 
     else if(state == 3)
     {
-        close();
+        openValve = false;
     }
 
     if((data.rpm < 50 || data.engineOnTime < ENGINE_WARMUP_TIME) && connected)
     {
-        open();
+        openValve = true;
     }
+
+
+    return openValve;
 }
 
 void open()

@@ -1,6 +1,6 @@
 /*
  * SoundBoi Exahust controller attiny1614 to interface with BLAT!
- * Version 1.0.0
+ * Version 1.0.1
  */
 
 #include <Arduino.h>
@@ -9,7 +9,7 @@
 
 #define VERSION_MAJOR 1
 #define VERSION_MINOR 0
-#define VERSION_PATCH 0
+#define VERSION_PATCH 1
 
 #define BUTTON                  2           //Pin for button in
 #define OUTPUT_PIN              1           //PIN FOR OUTPUT HIGH = OPEN
@@ -140,14 +140,14 @@ void loop()
 
 bool rules(bool connected)
 {
-    bool openValve = false;
+    bool openValve = true;
     if(state == 0 && engineOnTime > ENGINE_WARMUP_TIME)
     {
-        if((rpm > 3000 || load > 80 || throttle > 90) && speed < 90)
+        if((rpm > 3000 || throttle > 70) && speed < 70)
             openValve = true;
-        else if((rpm >  4000 || load > 90 || throttle > 90) && speed >= 90)
+        else if((rpm >  4000 || throttle > 90) && speed >= 70)
             openValve = true;
-        else if(speed == 0 && coolantTemp > 50)
+        else if(speed < 10 && coolantTemp > 50)
             openValve = true;
         else
             openValve = false;
@@ -190,6 +190,7 @@ void open()
 {
     debug.printf("<<%ld>> Opening valves!\r\n", millis());
     digitalWrite(OUTPUT_PIN, HIGH);
+    delay(1000);
 }
 
 void close()

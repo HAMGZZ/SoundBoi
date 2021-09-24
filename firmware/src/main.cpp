@@ -11,23 +11,24 @@
 #define VERSION_MINOR 0
 #define VERSION_PATCH 0
 
-#define BUTTON                  2          //Pin for button in
-#define OUTPUT_PIN              1          //PIN FOR OUTPUT HIGH = OPEN
+#define BUTTON                  2           //Pin for button in
+#define OUTPUT_PIN              1           //PIN FOR OUTPUT HIGH = OPEN
 
-#define ENGINE_WARMUP_TIME      10          //Number of seconds before valves close after the engine starts
+#define ENGINE_WARMUP_TIME      3           //Number of seconds before valves close after the engine starts
 
-#define IND_LED                 6
-#define CON_LED                 7
-
-
-ELM327 elm;
-SoftwareSerial debug(9, 10);
-
-int state = 0;
-int min_state = 0;
-int max_state = 3;          //GLOBAL VARS for interupt
+#define IND_LED                 6           //LED pin for displaying what state
+#define CON_LED                 7           //Connected to elm327 LED
 
 
+ELM327 elm;         
+SoftwareSerial debug(9, 10);                //Serial line for debugging
+
+int state = 0;                              //State of SoundBoi
+int min_state = 0;      
+int max_state = 3;                          //GLOBAL VARS for interupt (when connected and not)
+
+
+//Engine Data Struct
 struct EngineData
 {
     float rpm;
@@ -38,34 +39,43 @@ struct EngineData
     float engineOnTime;
 };
 
-bool rules(EngineData data, bool connected);
-void blinkLed(int *ledIndicatorTimer, int *blinkrate);
-void buttonHandler();
-void open();
-void close();
+
+bool rules(EngineData data, bool connected);            //Returns true or false depending on whether the valve should open or close
+void blinkLed(int *ledIndicatorTimer, int *blinkrate);  //Blink LED routine for dipiciting what state we are in.
+void buttonHandler();                                   //Button ISR
+void open();                                            //Open Valve         
+void close();                                           //Close Valve
 
 
 
 int main()
 {
-    delay(1000);
+    delay(1000);                        
     Serial.begin(115200);
     debug.begin(9600);
+
     debug.printf("SoundBoi for BLAT! - Lewis Hamilton September 2021\r\n");
     debug.printf("VERSION: %d.%d.%d\r\n", VERSION_MAJOR, VERSION_MINOR, VERSION_PATCH);
-    debug.printf("Loading variables...");
+    debug.printf("<<%ld>> Loading variables...", millis());
     
     pinMode(BUTTON, INPUT_PULLUP);
+    pinMode(OUTPUT_PIN, OUTPUT);
+    pinMode(IND_LED, OUTPUT);
+    pinMode(CON_LED, OUTPUT);
+
     attachInterrupt(digitalPinToInterrupt(BUTTON), buttonHandler, FALLING);
     
     EngineData data = {0};
     int ledIndicatorTimer = 0;
     int blinkrate = 0;
     bool connected = false;
-    debug.printf("[OK]\r\n");   
-    debug.printf("OPENING VALVES!\r\n");
+    debug.printf("[OK]\r\n");  
+
+    // Open valves for engine start.
     open();
-    debug.printf("CONNECTING TO ELM327...");
+
+
+    debug.printf("<<%ld>> CONNECTING TO ELM327...", millis());
 
     if(!elm.begin(Serial, true, 2000))
     {
@@ -102,7 +112,7 @@ int main()
             if(elm.status == ELM_SUCCESS)
             {
                 tempData = data;
-                debug.printf("RPM: %lf SPD: %lf THTL: %lf\% LOAD: %lf\% TEMP: %lfC ON-TIME: %lfs\r\n", data.rpm, data.speed, data.throttle, data.load, data.coolantTemp, data.engineOnTime);
+                debug.printf("<<%ld>> RPM: %lf SPD: %lf THTL: %lf\% LOAD: %lf\% TEMP: %lfC ON-TIME: %lfs\r\n", millis(), data.rpm, data.speed, data.throttle, data.load, data.coolantTemp, data.engineOnTime);
             }
         }
         
@@ -170,12 +180,13 @@ bool rules(EngineData data, bool connected)
 
 void open()
 {
+    debug.printf("<<%ld>> Opening valves!\r\n", millis());
     digitalWrite(OUTPUT_PIN, HIGH);
-    digitalWrite(IND_LED, HIGH);
 }
 
 void close()
 {
+    debug.printf("<<%ld>> Closing valves!\r\n", millis());
     digitalWrite(OUTPUT_PIN, LOW);
 }
 
@@ -185,7 +196,7 @@ void blinkLed(int *ledIndicatorTimer, int *blinkrate)
     {
         if(state == 0)
         {
-            *blinkrate = 10;
+            *blinkrate = 5;
             *ledIndicatorTimer = 0;
             digitalWrite(IND_LED, !digitalRead(IND_LED));
         }
@@ -229,5 +240,6 @@ void buttonHandler()
           state = min_state;
       }
   }
+  debug.printf("<<%ld>> Button pushed >> STATE %d", millis(), state);
   last_interrupt_time = interrupt_time;
 }

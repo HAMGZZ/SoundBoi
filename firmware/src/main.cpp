@@ -98,7 +98,6 @@ void loop()
 
     while(true)
     {
-        delay(100);
         if(connected)
         {
             float temprpm = elm.rpm();
@@ -196,20 +195,21 @@ void close()
 {
     debug.printf("<<%ld>> Closing valves!\r\n", millis());
     digitalWrite(OUTPUT_PIN, LOW);
+    delay(100);
 }
 
 void blinkLed()
 {
     if(state == 0)
     {
-        analogWrite(IND_LED, 70);
-        delay(100);
+        analogWrite(IND_LED, 10);
+        delay(200);
         digitalWrite(IND_LED, LOW);
     }
     else if(state == 1)
     {
-        analogWrite(IND_LED, 70);
-        delay(50);
+        analogWrite(IND_LED, 10);
+        delay(10);
         digitalWrite(IND_LED, LOW);
     }
     else if(state == 2)
@@ -218,7 +218,7 @@ void blinkLed()
     }
     else if(state == 3)
     {
-        analogWrite(IND_LED, 70);
+        analogWrite(IND_LED, 10);
     }
 }
 

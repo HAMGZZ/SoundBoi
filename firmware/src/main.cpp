@@ -74,7 +74,7 @@ void loop()
     // Open valves for engine start.
     open();
 
-
+    digitalWrite(IND_LED, HIGH);
     debug.printf("<<%ld>> CONNECTING TO ELM327...", millis());
 
     if(!elm.begin(Serial,false,1000))
@@ -94,7 +94,8 @@ void loop()
         min_state = 0;
         max_state = 3;
     }
-
+    
+    digitalWrite(IND_LED, LOW);
 
     while(true)
     {
@@ -141,11 +142,9 @@ bool rules(bool connected)
     bool openValve = true;
     if(state == 0 && engineOnTime > ENGINE_WARMUP_TIME)
     {
-        if((rpm > 3000 || throttle > 70) && speed < 70)
+        if((rpm > 3000 || throttle > 70) && speed < 80)
             openValve = true;
-        else if((rpm >  4000 || throttle > 90) && speed >= 70)
-            openValve = true;
-        else if(speed < 1 && coolantTemp > 50)
+        else if((rpm >  4000 || throttle > 80) && speed >= 80)
             openValve = true;
         else
             openValve = false;
@@ -155,7 +154,7 @@ bool rules(bool connected)
     {
         if((rpm > 2500 || load > 80 || throttle > 50) && speed < 90)
             openValve = true;
-        else if(speed < 25)
+        else if(speed < 40 && coolantTemp > 50)
             openValve = true;
         else if(speed >= 110)
         {
@@ -175,8 +174,12 @@ bool rules(bool connected)
         openValve = true;
     }
 
-    if((rpm < 50 || engineOnTime < ENGINE_WARMUP_TIME) && connected)
+    if(((rpm < 50 || engineOnTime < ENGINE_WARMUP_TIME) && connected) && state != 2)
     {
+        if(coolantTemp > 50)
+        {
+            delay(10000);
+        }
         openValve = true;
     }
 

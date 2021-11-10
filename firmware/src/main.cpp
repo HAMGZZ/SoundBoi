@@ -14,7 +14,7 @@
 #define BUTTON                  2           //Pin for button in
 #define OUTPUT_PIN              1           //PIN FOR OUTPUT HIGH = OPEN
 
-#define ENGINE_WARMUP_TIME      3           //Number of seconds before valves close after the engine starts
+#define ENGINE_WARMUP_TIME      1           //Number of seconds before valves close after the engine starts
 
 #define IND_LED                 6           //LED pin for displaying what state
 #define CON_LED                 7           //Connected to elm327 LED
@@ -145,7 +145,7 @@ bool rules(bool connected)
             openValve = true;
         else if((rpm >  4000 || throttle > 90) && speed >= 70)
             openValve = true;
-        else if(speed < 10 && coolantTemp > 50)
+        else if(speed < 1 && coolantTemp > 50)
             openValve = true;
         else
             openValve = false;
@@ -195,7 +195,7 @@ void close()
 {
     debug.printf("<<%ld>> Closing valves!\r\n", millis());
     digitalWrite(OUTPUT_PIN, LOW);
-    delay(100);
+    delay(1000);
 }
 
 void blinkLed()

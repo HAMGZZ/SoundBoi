@@ -157,7 +157,7 @@ bool rules(bool connected)
             openValve = true;
         else if(speed < 25)
             openValve = true;
-        else if(speed >= 90)
+        else if(speed >= 110)
         {
             state = 0;
         }
